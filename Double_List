@@ -1,0 +1,224 @@
+template <class T>
+class Double_List
+{
+private:
+	Node<T>* head;
+	Node<T>* tail;
+	int size;
+
+public:	//конструкторы
+	Double_List() {
+		head = tail = NULL;
+		size = 0;
+	}
+	Double_List(T val) {
+		head = new Node<T>(val);
+		tail = head;
+		size = 1;
+	}
+
+	void push_back(const T& val)
+	{
+		if (!(head == NULL))
+		{
+			this->tail->next = new Node<T>(this->tail, val);
+			Node<T>* new_element_p = this->tail->next;
+			this->tail = new_element_p;
+		}
+		else
+		{
+			head = new Node<T>(val);
+			tail = head;
+		}
+		size++;
+	}
+
+	void clear()
+	{
+		for (int c = 0; c != size; c++)
+		{
+			Node<T>* cur = head;
+			if (head->next != NULL)
+			{
+				head = head->next;
+			}
+			delete[] cur;
+		}
+		head = tail = NULL;
+		size = 0;
+	}
+
+	Double_List(Double_List& other)	//конструктор копий
+	{
+		cout << "Copy Constructor" << endl;
+		this->head = NULL;
+		this->tail = NULL;
+		this->size = 0;
+		for (int c = 0; c != other.size; c++)
+		{
+			this->push_back(other[c]);
+		}
+	};
+
+	//Inner Methods
+
+	void push_front(const T& val)
+	{
+		if (!(head == NULL))
+		{
+			this->head->prev = new Node<T>(val, this->head);
+			this->head = this->head->prev;
+		}
+		else
+		{
+			head = new Node<T>(val);
+			tail = head;
+		}
+		size++;
+	}
+
+
+	int find(const T& val)		//возвращает номер элемента в списке начиная с 0
+	{
+		Node<T>* cur = head;
+		int counter = 0;
+		while (!(cur->value == val))
+		{
+			cur = cur->next;
+			counter++;
+
+			if (size == counter)
+			{
+				return -1;
+			}
+		}
+		return counter;
+	}
+
+	int erase(const T& val)
+	{
+		int counter = 0;
+
+		if (size != 1)
+		{
+			Node<T>* cur = head;
+
+			while (!(cur->value == val))
+			{
+				cur = cur->next;
+				counter++;
+				if (size == counter)
+				{
+					return -1;
+				}
+			}
+
+			if (counter == 0)	//удаление первого элемента
+			{
+				cur->next->prev = NULL;
+				head = cur->next;
+			}
+			else if (counter == size - 1)		//удаление последнего
+			{
+				cur->prev->next = NULL;
+				tail = cur->prev;
+			}
+			else
+			{
+				cur->prev->next = cur->next;	//удаление остальных
+				cur->next->prev = cur->prev;
+			}
+			size--;
+
+			delete[] cur;
+			return 0;
+		}
+		else if (size == 1)
+		{
+			delete[] head;
+			head = tail = NULL;
+			size = 0;
+			return 0;
+		}
+	}
+
+	int Size()
+	{
+		return size;
+	}
+
+	Node<T>* at(const int val)	//возвращает указатель на Node (не value)
+	{
+		Node<T>* cur = head;
+		int counter = 0;
+
+		while (!(counter == val))
+		{
+			cur = cur->next;
+			counter++;
+			if (size == counter)
+			{
+				throw exception("No such index in the List");
+			}
+		}
+		return cur;
+	}
+
+	void PrintList()
+	{
+		Node<T>* cur = head;
+		cout << "\n";
+		if (cur == NULL)
+		{
+			cout << "List is empty" << endl;
+		}
+		else {
+			while (cur->next != NULL)
+			{
+				cout << "[" << cur->value << "]-";
+				cur = cur->next;
+			}
+			cout << "[" << cur->value << "]" << endl;
+		}
+	}
+
+	//Operator Overload
+	T& operator[] (const int index)
+	{
+		Node<T>* cur = head;
+		for (int c = 0; c != index; c++)
+		{
+			cur = cur->next;
+		}
+		return cur->value;
+	}
+
+	Double_List& operator = (Double_List& other)
+	{
+		this->clear();
+		for (int c = 0; c != other.size; c++)
+		{
+			this->push_back(other[c]);
+		}
+		//cout << "Assignment Operator" << endl;*/
+		return *this;
+	}
+	friend ostream& operator<< (ostream& os, const Double_List& l)
+	{
+		Node<T>* cur = l.head;
+		if (cur == NULL)
+		{
+			os << "List is empty" << endl;
+		}
+		else {
+			while (cur->next != NULL)
+			{
+				os << "[" << cur->value << "]-";
+				cur = cur->next;
+			}
+			os << "[" << cur->value << "]" << endl;
+		}
+		return os;
+	}
+
+};
