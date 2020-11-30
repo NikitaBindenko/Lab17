@@ -1,0 +1,281 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <list>
+#include <map>
+#include <set>
+
+using namespace std;
+
+struct node
+{
+private:
+	int val;
+	char symbol;
+	node* left;
+	node* right;
+public:
+	node()
+	{
+		left = NULL;
+		right = NULL;
+	}
+
+	node(node* L, node* R)
+	{
+		left = L;
+		right = R;
+		val = L->val + R->val;
+	}
+
+	void set_symbol(char c)
+	{
+		symbol = c;
+	}
+
+	void set_val(int a)
+	{
+		val = a;
+	}
+
+	int get_val()
+	{
+		return val;
+	}
+
+	char get_symbol()
+	{
+		return symbol;
+	}
+
+	node* get_left()
+	{
+		return left;
+	}
+
+	node* get_right()
+	{
+		return right;
+	}
+};
+
+struct MyCompare
+{
+	bool operator()(node* L, node* R) const
+	{
+		return L->get_val() < R->get_val();
+	}
+};
+
+class Node
+{
+public:
+	Node* parent;
+	Node* left;
+	Node* right;
+	char val;
+	int freq;
+
+	Node(Node const& other)
+	{
+		val = other.val;
+		freq = other.freq;
+		parent = other.parent;
+		left = other.left;
+		right = other.right;
+	}
+
+	Node() :freq(0), val(0), parent(NULL), left(NULL), right(NULL) { /*cout << "Constructor" << endl;*/ }
+	Node(char value, int frequency) : val(value), freq(frequency), parent(NULL), left(NULL), right(NULL) { /*cout << "Constructor" << endl;*/ }
+	Node(Node L, Node R)
+	{
+		left = &L;
+		right = &R;
+		freq = L.freq + R.freq;
+	}
+
+	// методы
+
+	Node& operator=(const Node& other)
+	{
+		this->freq = other.freq;
+		this->val = other.val;
+		return *this;
+	}
+	friend ostream& operator<<(ostream& os, Node& n)
+	{
+		os << n.val;
+		return os;
+	}
+};
+
+bool operator < (Node const& left, Node const& right) { return left.freq < right.freq; }
+bool operator > (Node const& left, Node const& right) { return left.freq > right.freq; }
+bool operator == (Node const& left, Node const& right) { return left.freq == right.freq; }
+
+class BinaryTree
+{
+public:
+	Node* head;
+	BinaryTree() { head = new Node; }
+
+	//Inner Methods
+	multiset<Node>& AddNewParent(multiset<Node>& tab, multiset<Node>::iterator& FirstElement)
+	{
+		Node minElement1 = *min_element(FirstElement, tab.end());	//находим минимальный элемент
+		FirstElement++;
+		Node minElement2 = *min_element(FirstElement, tab.end());
+		FirstElement++;
+
+		/*head = &CreateParent(minElement1, minElement2);
+		tab.emplace(*head);*/
+		//Node P = CreateParent(minElement1, minElement2);
+		//tab.emplace(P);
+		return tab;
+	}
+	/*Node& OriginalCreateParent(Node& left, Node& right)
+	{
+		left.parent = right.parent = new Node;	//создание узла-родителя и связывание указателями
+		left.parent->left = &left;
+		right.parent->right = &right;
+
+		left.parent->freq = left.freq + right.freq;
+		return *left.parent;
+	}*/
+	Node& CreateParent(multiset<Node>& tab, multiset<Node>::iterator& FirstElement)
+	{
+		Node left = *min_element(FirstElement, tab.end());
+		FirstElement++;
+		Node right = *min_element(FirstElement, tab.end());
+		FirstElement++;
+		left.parent = right.parent = new Node;
+		left.parent->left = &left;
+		right.parent->right = &right;
+
+		left.parent->freq = left.freq + right.freq;
+
+		if (FirstElement != tab.end()) {
+			tab.emplace(*left.parent);
+			CreateParent(tab, FirstElement);
+		}
+		else {
+			return *left.parent;
+		}
+	}
+public:
+	void BuildTree(multiset<Node>& tab)
+	{
+		multiset<Node>::iterator FirstElement = tab.begin();
+		head = &CreateParent(tab, FirstElement);
+	}
+};
+BinaryTree BuildTree(BinaryTree& Tree, multiset<Node>& tab)
+{
+	multiset<Node>::iterator FirstElement = tab.begin();
+	Tree.head = &Tree.CreateParent(tab, FirstElement);
+	return Tree;
+}
+
+int main()
+{
+	/*if (fopen("InputOutput.txt", "r"))
+	{
+		cout<<"File opened"<<endl;
+	}
+	else
+	{
+		cout << "File was not opened" << endl;
+		return -1;
+	}*/
+	
+	ifstream fs("InputOutput.txt");
+
+	if (fs)
+	{
+		cout << "File opened" << endl;
+	}
+	else
+	{
+		cout << "File was not opened" << endl;
+		return -1;
+	}
+
+	string str((std::istreambuf_iterator<char>(fs)), istreambuf_iterator<char>());	//шо это такое
+	// строка копирует содержимое файла в str
+	cout << str << endl;
+	const char* myString = str.c_str();
+
+	vector <Node> table;
+	int WhileCounter = 0;
+	char ch;
+	while(myString[WhileCounter] != '\0') //(!fs.eof())	//последний символ из файла загружается 2 раза
+	{
+		int tablesize = table.size();
+		/*fs >>*/ ch = myString[WhileCounter];		// не читаются пробелы
+		if (tablesize > 0)	//начинаем алгоритм только если в таблице уже есть символы
+		{
+			int i = 0;
+			for (i = 0; i < tablesize; i++)
+			{
+				if (ch == table[i].val)
+				{
+					//данный символ уже есть в таблице, увеличиваем количество данных символов в таблице
+					table[i].freq++;
+					break;
+				}
+				
+			}
+			if(i == tablesize)	//если for дошел до конца и не нашел символа в таблице, то вставляем его
+			{
+				//данного символа еще нет в таблице, добавляем новое поле в table и записываем туда 1
+
+				table.push_back(Node(ch, 1));   //вставляем элемент со значением ch и freq = 1
+
+				//нужно заменить pushback на insert чтобы сразу получать отсортированный массив
+			}
+		}
+		else
+		{
+			table.push_back(Node(ch, 1));//действия для первого символа в файле
+		}
+		cout << ch << endl;		//всегда выводит последний символ два раза		//строка для отладки
+		WhileCounter++;
+	}
+
+	multiset <Node> TableSet;	//раньше был Set
+	
+
+	WhileCounter = 0;
+	while (WhileCounter != table.size())
+	{
+		TableSet.emplace(table[WhileCounter]);
+		WhileCounter++;
+	}
+	table.clear();
+
+	/*Node* head;
+	list<Node>::iterator end_list = TableSet.begin();
+
+	while (TableSet.size() != 1) // создание самого дерева
+	{
+		TableSet.sort();
+
+		Node l_son = TableSet.front();
+		TableSet.pop_front();
+		Node r_son = TableSet.front();
+		TableSet.pop_front();
+
+		Node* head = new Node(l_son, r_son);
+		Node parent;
+		parent = *head;
+		TableSet.push_back(parent);
+	}*/
+
+	BinaryTree CodeTree;
+	CodeTree.BuildTree(TableSet);
+	//CodeTree = BuildTree(CodeTree, TableSet);
+	int qwe;
+	return 0;
